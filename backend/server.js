@@ -20,6 +20,16 @@ app.use(express.json({ limit: '10mb' }));
 // Ensure data directory exists (for SQLite database file)
 await fs.mkdir(DATA_DIR, { recursive: true });
 
+// Serve frontend static files if they exist (for combined deployment)
+const FRONTEND_DIR = path.join(__dirname, 'public');
+try {
+  await fs.access(FRONTEND_DIR);
+  app.use(express.static(FRONTEND_DIR));
+  console.log('Serving frontend from', FRONTEND_DIR);
+} catch {
+  console.log('No frontend files found - API only mode');
+}
+
 // Create a new JSON blob
 app.post('/api/blobs', async (req, res) => {
   try {
@@ -74,6 +84,25 @@ app.get('/api/blobs/:id', async (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Serve frontend for all non-API routes (SPA routing)
+// This must be the last route, after all API routes
+app.use(async (req, res, next) => {
+  // Skip if it's an API route
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  // Try to serve index.html for frontend routing
+  try {
+    const indexPath = path.join(FRONTEND_DIR, 'index.html');
+    await fs.access(indexPath);
+    res.sendFile(indexPath);
+  } catch {
+    // No frontend, return 404
+    res.status(404).json({ error: 'Not found' });
+  }
 });
 
 // Graceful shutdown
