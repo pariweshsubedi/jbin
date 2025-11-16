@@ -29,11 +29,13 @@ npm run dev
 
 Visit `http://localhost:5173`
 
-### Deploy to CapRover
+### Docker Compose
 
 ```bash
-npm run deploy
+docker-compose up
 ```
+
+Visit `http://localhost`
 
 ## Tech Stack
 

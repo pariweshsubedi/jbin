@@ -4,14 +4,11 @@
   "description": "JBin - JSON sharing platform",
   "private": true,
   "scripts": {
-    "deploy": "npm run deploy:backend && npm run deploy:frontend",
-    "deploy:backend": "cd backend && caprover deploy",
-    "deploy:frontend": "cd frontend && caprover deploy",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },
   "keywords": ["json", "pastebin", "sharing"],
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 }
