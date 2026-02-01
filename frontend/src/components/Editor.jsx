@@ -1,13 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import './Editor.css';
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 function Editor() {
   const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [recaptchaReady, setRecaptchaReady] = useState(!RECAPTCHA_SITE_KEY);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (RECAPTCHA_SITE_KEY) {
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+      script.onload = () => setRecaptchaReady(true);
+      document.head.appendChild(script);
+    }
+  }, []);
 
   const validateJSON = (text) => {
     if (!text.trim()) {
@@ -65,16 +77,24 @@ function Editor() {
 
     try {
       const parsed = JSON.parse(jsonInput);
+      const body = { json: parsed };
+
+      if (RECAPTCHA_SITE_KEY && window.grecaptcha) {
+        const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'create_blob' });
+        body.recaptchaToken = token;
+      }
+
       const response = await fetch(`${API_URL}/api/blobs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ json: parsed }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create blob');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to create blob');
       }
 
       const data = await response.json();
@@ -112,7 +132,7 @@ function Editor() {
           <button
             onClick={handleShare}
             className="btn btn-success"
-            disabled={isLoading}
+            disabled={isLoading || !recaptchaReady}
           >
             {isLoading ? 'Sharing...' : 'Share'}
           </button>
