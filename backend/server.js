@@ -19,9 +19,14 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 
 // Security configuration
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
+const RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY;
 const RECAPTCHA_MIN_SCORE = parseFloat(process.env.RECAPTCHA_MIN_SCORE) || 0.5;
 const CSP_EXTRA_SCRIPT_SRC = process.env.CSP_EXTRA_SCRIPT_SRC?.split(',').filter(Boolean) || [];
 const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',').filter(Boolean) || null; // null = allow all
+
+// Analytics configuration (public - served to frontend)
+const UMAMI_URL = process.env.UMAMI_URL;
+const UMAMI_WEBSITE_ID = process.env.UMAMI_WEBSITE_ID;
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 min
@@ -173,6 +178,21 @@ app.get('/api/blobs/:id', async (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Public configuration endpoint (for frontend runtime config)
+app.get('/api/config', (req, res) => {
+  res.json({
+    analytics: {
+      umami: UMAMI_URL && UMAMI_WEBSITE_ID ? {
+        url: UMAMI_URL,
+        websiteId: UMAMI_WEBSITE_ID,
+      } : null,
+    },
+    recaptcha: RECAPTCHA_SITE_KEY ? {
+      siteKey: RECAPTCHA_SITE_KEY,
+    } : null,
+  });
 });
 
 // Serve frontend for all non-API routes (SPA routing)

@@ -1,25 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfig } from '../ConfigContext';
 import { API_URL } from '../config';
 import './Editor.css';
 
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-
 function Editor() {
+  const { config, loading: configLoading } = useConfig();
   const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [recaptchaReady, setRecaptchaReady] = useState(!RECAPTCHA_SITE_KEY);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
   const navigate = useNavigate();
 
+  const recaptchaSiteKey = config?.recaptcha?.siteKey;
+
   useEffect(() => {
-    if (RECAPTCHA_SITE_KEY) {
+    if (configLoading) return;
+
+    if (recaptchaSiteKey) {
       const script = document.createElement('script');
-      script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+      script.src = `https://www.google.com/recaptcha/api.js?render=${recaptchaSiteKey}`;
       script.onload = () => setRecaptchaReady(true);
       document.head.appendChild(script);
+    } else {
+      setRecaptchaReady(true);
     }
-  }, []);
+  }, [configLoading, recaptchaSiteKey]);
 
   const validateJSON = (text) => {
     if (!text.trim()) {
@@ -79,8 +85,8 @@ function Editor() {
       const parsed = JSON.parse(jsonInput);
       const body = { json: parsed };
 
-      if (RECAPTCHA_SITE_KEY && window.grecaptcha) {
-        const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'create_blob' });
+      if (recaptchaSiteKey && window.grecaptcha) {
+        const token = await window.grecaptcha.execute(recaptchaSiteKey, { action: 'create_blob' });
         body.recaptchaToken = token;
       }
 
@@ -132,7 +138,7 @@ function Editor() {
           <button
             onClick={handleShare}
             className="btn btn-success"
-            disabled={isLoading || !recaptchaReady}
+            disabled={isLoading || configLoading || !recaptchaReady}
           >
             {isLoading ? 'Sharing...' : 'Share'}
           </button>
