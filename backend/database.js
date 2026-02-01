@@ -1,12 +1,17 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Database file location
-const DB_PATH = path.join(__dirname, 'data', 'jbin.db');
+// Database file location (configurable via env var)
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DB_PATH = path.join(DATA_DIR, 'jbin.db');
+
+// Ensure data directory exists
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // Initialize database
 const db = new Database(DB_PATH);

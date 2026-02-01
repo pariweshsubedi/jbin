@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import path from 'path';
@@ -10,10 +12,29 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Server configuration
 const PORT = process.env.PORT || 3001;
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+
+// Security configuration
 const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_MIN_SCORE = parseFloat(process.env.RECAPTCHA_MIN_SCORE) || 0.5;
+const CSP_EXTRA_SCRIPT_SRC = process.env.CSP_EXTRA_SCRIPT_SRC?.split(',').filter(Boolean) || [];
+const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',').filter(Boolean) || null; // null = allow all
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000; // 15 min
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX) || 100;
+const CREATE_LIMIT_WINDOW_MS = parseInt(process.env.CREATE_LIMIT_WINDOW_MS) || 60 * 60 * 1000; // 1 hour
+const CREATE_LIMIT_MAX = parseInt(process.env.CREATE_LIMIT_MAX) || 30;
+
+// Blob configuration
+const JSON_SIZE_LIMIT = process.env.JSON_SIZE_LIMIT || '10mb';
+const BLOB_ID_LENGTH = parseInt(process.env.BLOB_ID_LENGTH) || 10;
+
+// Validate nanoid format (alphanumeric + _-)
+const isValidId = (id) => new RegExp(`^[A-Za-z0-9_-]{${BLOB_ID_LENGTH}}$`).test(id);
 
 async function verifyRecaptcha(token) {
   if (!RECAPTCHA_SECRET_KEY) return { success: true };
@@ -35,9 +56,39 @@ async function verifyRecaptcha(token) {
   }
 }
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://www.google.com", "https://www.gstatic.com", ...CSP_EXTRA_SCRIPT_SRC],
+      frameSrc: ["https://www.google.com"],
+      connectSrc: ["'self'", ...CSP_EXTRA_SCRIPT_SRC],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    },
+  },
+}));
+app.use(cors(CORS_ORIGINS ? { origin: CORS_ORIGINS } : {}));
+app.use(express.json({ limit: JSON_SIZE_LIMIT }));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  max: RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+
+const createLimiter = rateLimit({
+  windowMs: CREATE_LIMIT_WINDOW_MS,
+  max: CREATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many pastes created, please try again later' },
+});
+
+app.use('/api/', apiLimiter);
 
 // Ensure data directory exists (for SQLite database file)
 await fs.mkdir(DATA_DIR, { recursive: true });
@@ -53,7 +104,7 @@ try {
 }
 
 // Create a new JSON blob
-app.post('/api/blobs', async (req, res) => {
+app.post('/api/blobs', createLimiter, async (req, res) => {
   try {
     const { json, recaptchaToken } = req.body;
 
@@ -80,7 +131,7 @@ app.post('/api/blobs', async (req, res) => {
     }
 
     // Generate unique ID
-    const id = nanoid(10);
+    const id = nanoid(BLOB_ID_LENGTH);
 
     // Save to database
     dbOperations.createBlob(id, json);
@@ -99,6 +150,11 @@ app.post('/api/blobs', async (req, res) => {
 app.get('/api/blobs/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Validate ID format
+    if (!isValidId(id)) {
+      return res.status(400).json({ error: 'Invalid blob ID format' });
+    }
 
     // Get from database
     const blob = dbOperations.getBlob(id);
