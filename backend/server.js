@@ -12,6 +12,28 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATA_DIR = path.join(__dirname, 'data');
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
+const RECAPTCHA_MIN_SCORE = parseFloat(process.env.RECAPTCHA_MIN_SCORE) || 0.5;
+
+async function verifyRecaptcha(token) {
+  if (!RECAPTCHA_SECRET_KEY) return { success: true };
+
+  try {
+    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${RECAPTCHA_SECRET_KEY}&response=${token}`,
+    });
+    const data = await response.json();
+    return {
+      success: data.success && data.score >= RECAPTCHA_MIN_SCORE,
+      score: data.score,
+    };
+  } catch (error) {
+    console.error('reCAPTCHA verification failed:', error);
+    return { success: false };
+  }
+}
 
 // Middleware
 app.use(cors());
@@ -33,7 +55,18 @@ try {
 // Create a new JSON blob
 app.post('/api/blobs', async (req, res) => {
   try {
-    const { json } = req.body;
+    const { json, recaptchaToken } = req.body;
+
+    // Verify reCAPTCHA if configured
+    if (RECAPTCHA_SECRET_KEY) {
+      if (!recaptchaToken) {
+        return res.status(400).json({ error: 'reCAPTCHA verification required' });
+      }
+      const verification = await verifyRecaptcha(recaptchaToken);
+      if (!verification.success) {
+        return res.status(403).json({ error: 'reCAPTCHA verification failed' });
+      }
+    }
 
     if (!json) {
       return res.status(400).json({ error: 'JSON content is required' });
