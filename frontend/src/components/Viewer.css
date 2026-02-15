@@ -1,71 +1,81 @@
 .viewer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
-  min-height: 100vh;
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  overflow: hidden;
 }
 
 .viewer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white;
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-xl);
   flex-wrap: wrap;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .logo-link {
   text-decoration: none;
-  color: white;
+  color: var(--color-text-primary);
+  transition: color var(--transition-fast);
+}
+
+.logo-link:hover {
+  color: var(--color-accent-blue);
 }
 
 .logo-link h1 {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0;
 }
 
 .viewer-info {
   display: flex;
-  gap: 24px;
-  font-size: 14px;
-  opacity: 0.9;
+  gap: var(--spacing-xl);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
 }
 
 .viewer-content {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-default);
+  padding: var(--spacing-xl);
 }
 
 .viewer-controls {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
   flex-wrap: wrap;
 }
 
-.json-display {
-  width: 100%;
-  padding: 20px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  overflow-x: auto;
-  white-space: pre;
-  color: #333;
+.viewer-container .monaco-wrapper {
+  flex: 1;
+  min-height: 400px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .viewer-container .error-message {
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-lg);
 }
 
 @media (max-width: 768px) {
+  .viewer-container {
+    padding: var(--spacing-xl) var(--spacing-lg);
+  }
+
   .viewer-header {
     flex-direction: column;
     align-items: flex-start;
@@ -73,6 +83,25 @@
 
   .viewer-info {
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-sm);
+  }
+
+  .logo-link h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .viewer-controls {
+    flex-direction: column;
+  }
+
+  .viewer-controls .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .viewer-container .monaco-wrapper {
+    min-height: 300px;
   }
 }

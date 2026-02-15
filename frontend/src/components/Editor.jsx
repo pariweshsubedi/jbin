@@ -1,17 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import MonacoEditor from '@monaco-editor/react';
 import { useConfig } from '../ConfigContext';
+import { useTheme } from '../ThemeContext';
 import { API_URL } from '../config';
 import './Editor.css';
 
 function Editor() {
   const { config, loading: configLoading } = useConfig();
+  const { theme } = useTheme();
   const [jsonInput, setJsonInput] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [recaptchaReady, setRecaptchaReady] = useState(false);
   const navigate = useNavigate();
 
+  const editorRef = useRef(null);
   const recaptchaSiteKey = config?.recaptcha?.siteKey;
 
   useEffect(() => {
@@ -104,6 +108,9 @@ function Editor() {
       }
 
       const data = await response.json();
+      if (!data.id || !/^[A-Za-z0-9_-]+$/.test(data.id)) {
+        throw new Error('Invalid response from server');
+      }
       navigate(`/${data.id}`);
     } catch (e) {
       setError('Error sharing JSON: ' + e.message);
@@ -150,16 +157,31 @@ function Editor() {
           </div>
         )}
 
-        <textarea
-          className="json-editor"
-          value={jsonInput}
-          onChange={(e) => {
-            setJsonInput(e.target.value);
-            setError('');
-          }}
-          placeholder='Paste your JSON here...\n\nExample:\n{\n  "name": "John Doe",\n  "age": 30,\n  "email": "john@example.com"\n}'
-          spellCheck={false}
-        />
+        <div className="monaco-wrapper">
+          <MonacoEditor
+            height="100%"
+            defaultLanguage="json"
+            theme={theme === 'dark' ? 'vs-dark' : 'light'}
+            value={jsonInput}
+            onChange={(value) => {
+              setJsonInput(value || '');
+              setError('');
+            }}
+            onMount={(editor) => { editorRef.current = editor; }}
+            options={{
+              minimap: { enabled: true },
+              fontSize: 14,
+              lineHeight: 1.6,
+              fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 2,
+              wordWrap: 'on',
+              padding: { top: 16 },
+              renderLineHighlight: 'gutter',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import MonacoEditor from '@monaco-editor/react';
+import { useTheme } from '../ThemeContext';
 import { API_URL } from '../config';
 import './Viewer.css';
 
 function Viewer() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [jsonData, setJsonData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -13,8 +16,14 @@ function Viewer() {
 
   useEffect(() => {
     const fetchBlob = async () => {
+      if (!id || !/^[A-Za-z0-9_-]+$/.test(id)) {
+        setError('Invalid blob ID');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetch(`${API_URL}/api/blobs/${id}`);
+        const response = await fetch(`${API_URL}/api/blobs/${encodeURIComponent(id)}`);
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -67,7 +76,7 @@ function Viewer() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `jbin-${id}.json`;
+      a.download = `jbin-${id.replace(/[^A-Za-z0-9_-]/g, '_')}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -127,9 +136,27 @@ function Viewer() {
           </Link>
         </div>
 
-        <pre className="json-display">
-          {JSON.stringify(jsonData.json, null, 2)}
-        </pre>
+        <div className="monaco-wrapper">
+          <MonacoEditor
+            height="100%"
+            defaultLanguage="json"
+            theme={theme === 'dark' ? 'vs-dark' : 'light'}
+            value={JSON.stringify(jsonData.json, null, 2)}
+            options={{
+              readOnly: true,
+              minimap: { enabled: true },
+              fontSize: 14,
+              lineHeight: 1.6,
+              fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 2,
+              wordWrap: 'on',
+              padding: { top: 16 },
+              renderLineHighlight: 'none',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

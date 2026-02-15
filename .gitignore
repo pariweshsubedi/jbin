@@ -45,3 +45,6 @@ temp/
 # Optional npm cache
 .npm
 .eslintcache
+
+# Claude local settings
+.claude/

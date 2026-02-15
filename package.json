@@ -10,5 +10,9 @@
   },
   "keywords": ["json", "pastebin", "sharing"],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pariweshsubedi/jbin.git"
+  }
 }
