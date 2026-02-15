@@ -13,6 +13,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust first proxy (needed for correct rate limiting behind reverse proxy)
+app.set('trust proxy', 1);
+
 // Server configuration
 const PORT = process.env.PORT || 3001;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -56,7 +59,7 @@ async function verifyRecaptcha(token) {
       score: data.score,
     };
   } catch (error) {
-    console.error('reCAPTCHA verification failed:', error);
+    console.error('reCAPTCHA verification failed:', error.message);
     return { success: false };
   }
 }
@@ -69,8 +72,13 @@ app.use(helmet({
       scriptSrc: ["'self'", "https://www.google.com", "https://www.gstatic.com", ...CSP_EXTRA_SCRIPT_SRC],
       frameSrc: ["https://www.google.com"],
       connectSrc: ["'self'", ...CSP_EXTRA_SCRIPT_SRC],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Monaco Editor requires inline styles
     },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
   },
 }));
 app.use(cors(CORS_ORIGINS ? { origin: CORS_ORIGINS } : {}));

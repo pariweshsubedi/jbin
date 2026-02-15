@@ -7,10 +7,15 @@
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "keywords": [],
+  "keywords": ["json", "pastebin", "sharing", "api"],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "JSON sharing backend API",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pariweshsubedi/jbin.git",
+    "directory": "backend"
+  },
   "dependencies": {
     "better-sqlite3": "^11.8.1",
     "cors": "^2.8.5",

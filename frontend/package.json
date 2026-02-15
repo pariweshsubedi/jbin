@@ -1,7 +1,14 @@
 {
   "name": "jbin-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "JBin - JSON sharing frontend",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pariweshsubedi/jbin.git",
+    "directory": "frontend"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +17,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.4"
