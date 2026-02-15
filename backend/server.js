@@ -25,6 +25,7 @@ const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 const RECAPTCHA_SITE_KEY = process.env.RECAPTCHA_SITE_KEY;
 const RECAPTCHA_MIN_SCORE = parseFloat(process.env.RECAPTCHA_MIN_SCORE) || 0.5;
 const CSP_EXTRA_SCRIPT_SRC = process.env.CSP_EXTRA_SCRIPT_SRC?.split(',').filter(Boolean) || [];
+const CSP_EXTRA_STYLE_SRC = process.env.CSP_EXTRA_STYLE_SRC?.split(',').filter(Boolean) || [];
 const CORS_ORIGINS = process.env.CORS_ORIGINS?.split(',').filter(Boolean) || null; // null = allow all
 
 // Analytics configuration (public - served to frontend)
@@ -72,7 +73,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "https://www.google.com", "https://www.gstatic.com", ...CSP_EXTRA_SCRIPT_SRC],
       frameSrc: ["https://www.google.com"],
       connectSrc: ["'self'", ...CSP_EXTRA_SCRIPT_SRC],
-      styleSrc: ["'self'", "'unsafe-inline'"], // Monaco Editor requires inline styles
+      styleSrc: ["'self'", "'unsafe-inline'", ...CSP_EXTRA_STYLE_SRC],
     },
   },
   hsts: {
